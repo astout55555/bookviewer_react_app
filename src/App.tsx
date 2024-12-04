@@ -1,7 +1,48 @@
-import { useState } from 'react'
 import './app.css';
 
+import { useState, useEffect } from 'react'
+import bookviewerService from './services/bookviewer';
+
+import {
+  TableOfContents,
+  CurrentChapter,
+  ChapterTitle,
+} from './types';
+
+import TOC from './components/TOC';
+import Main from './components/Main';
+
 function App() {
+  const [toc, setToc] = useState<TableOfContents>();
+  const [currentChapter, setCurrentChapter] = useState<CurrentChapter>(null);
+  const [chapterTitle, setChapterTitle] = useState<ChapterTitle>(null);
+
+  useEffect(() => {
+    async function getAndSetTOC() {
+      try {
+        const tableOfContents = await bookviewerService.getTOC();
+        setToc(tableOfContents);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    getAndSetTOC();
+  }, []);
+
+  if (!toc) {
+    return null;
+  }
+
+  async function viewChapter(chapterName: string) {
+    try {
+      const chapterContents = await bookviewerService.getChapter(chapterName);
+      setCurrentChapter(chapterContents);
+      setChapterTitle(chapterName);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <div id="layout">
@@ -12,32 +53,13 @@ function App() {
       <div id="menu">
           <div className="pure-menu">
               <a className="pure-menu-heading" href="/">Table of Contents</a>
-
-              <ul className="pure-menu-list">
-                <li className="pure-menu-item">
-                  <a href="#" className="pure-menu-link">Chapter 1</a>
-                </li>
-              </ul>
+              <TOC toc={toc} viewChapter={viewChapter} />
           </div>
       </div>
 
       <div id="main">
-        <div className="header">
-          <h1>The Adventures of Sherlock Holmes</h1>
-          <h2>by Sir Arthur Doyle</h2>
-        </div>
-
-        <div className="content">
-          <h2 className="content-subhead">Table of Contents</h2>
-
-          <div className="pure-menu">
-            <ul className="pure-menu-list">
-              <li className="pure-menu-item">
-                <a href="#" className="pure-menu-link">Chapter 1</a>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <Main toc={toc} viewChapter={viewChapter}
+          currentChapter={currentChapter} chapterTitle={chapterTitle} />
       </div>
     </div>
   )
